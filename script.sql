@@ -12,6 +12,8 @@
 -- Conectarse a la base de datos (si se ejecuta por separado)
 -- \c social_app_db;
 
+SET search_path TO public;
+
 -- ======================================================
 -- 2. Extensiones necesarias
 -- ======================================================
@@ -163,8 +165,8 @@ CREATE TABLE transaccion (
 );
 
 -- Tabla Reseña
-CREATE TABLE reseña (
-    id_reseña SERIAL PRIMARY KEY,
+CREATE TABLE resena (
+    id_resena SERIAL PRIMARY KEY,
     calificacion INTEGER NOT NULL CHECK (calificacion BETWEEN 1 AND 5),
     comentario TEXT,
     respuesta_emprendedor TEXT,
@@ -201,7 +203,7 @@ CREATE INDEX idx_guardado_publicacion ON guardado(id_publicacion);
 CREATE INDEX idx_visualizacion_publicacion ON visualizacion(id_publicacion);
 CREATE INDEX idx_evento_publicacion ON evento_conversion(id_publicacion);
 CREATE INDEX idx_transaccion_comprador ON transaccion(id_comprador);
-CREATE INDEX idx_reseña_vendedor ON reseña(id_vendedor);
+CREATE INDEX idx_resena_vendedor ON resena(id_vendedor);
 
 -- Índice de búsqueda de texto completo para publicaciones (opcional, avanzado)
 -- CREATE INDEX idx_publicacion_busqueda ON publicacion USING GIN (to_tsvector('spanish', titulo || ' ' || COALESCE(descripcion, '')));
@@ -471,14 +473,24 @@ DECLARE
     v_clics_comprar BIGINT;
     v_tasa DECIMAL(5,4);
 BEGIN
-    SELECT COUNT(*) INTO v_visualizaciones FROM visualizacion WHERE id_publicacion = p_id_publicacion;
-    SELECT COUNT(*) INTO v_clics_comprar FROM evento_conversion WHERE id_publicacion = p_id_publicacion AND tipo_evento = 'clic_comprar';
-    
+
+    SELECT COUNT(*)
+    INTO v_visualizaciones
+    FROM public.visualizacion
+    WHERE id_publicacion = p_id_publicacion;
+
+    SELECT COUNT(*)
+    INTO v_clics_comprar
+    FROM public.evento_conversion
+    WHERE id_publicacion = p_id_publicacion
+      AND tipo_evento = 'clic_comprar';
+
     IF v_visualizaciones = 0 THEN
         RETURN 0.0;
     END IF;
-    
+
     v_tasa := v_clics_comprar::DECIMAL / v_visualizaciones::DECIMAL;
+
     RETURN ROUND(v_tasa, 4);
 END;
 $$;
@@ -525,24 +537,46 @@ $$;
 CREATE OR REPLACE FUNCTION auditoria_trigger()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-SECURITY DEFINER
 AS $$
 DECLARE
     v_datos_viejos JSONB = NULL;
     v_datos_nuevos JSONB = NULL;
+    v_id_registro INTEGER = NULL;
 BEGIN
+
+    -- Capturar datos
     IF TG_OP = 'DELETE' THEN
-        v_datos_viejos = row_to_json(OLD);
+        v_datos_viejos := to_jsonb(OLD);
+
     ELSIF TG_OP = 'UPDATE' THEN
-        v_datos_viejos = row_to_json(OLD);
-        v_datos_nuevos = row_to_json(NEW);
+        v_datos_viejos := to_jsonb(OLD);
+        v_datos_nuevos := to_jsonb(NEW);
+
     ELSIF TG_OP = 'INSERT' THEN
-        v_datos_nuevos = row_to_json(NEW);
+        v_datos_nuevos := to_jsonb(NEW);
     END IF;
-    
-    INSERT INTO auditoria_log (tabla_afectada, accion, id_registro, datos_viejos, datos_nuevos)
-    VALUES (TG_TABLE_NAME, TG_OP, COALESCE(OLD.id_publicacion, NEW.id_publicacion, OLD.id_producto, NEW.id_producto), v_datos_viejos, v_datos_nuevos);
-    
+
+    -- Obtener ID automáticamente
+    v_id_registro := COALESCE(
+        v_datos_nuevos ->> 'id',
+        v_datos_viejos ->> 'id'
+    );
+
+    INSERT INTO auditoria_log (
+        tabla_afectada,
+        accion,
+        id_registro,
+        datos_viejos,
+        datos_nuevos
+    )
+    VALUES (
+        TG_TABLE_NAME,
+        TG_OP,
+        v_id_registro,
+        v_datos_viejos,
+        v_datos_nuevos
+    );
+
     RETURN NULL;
 END;
 $$;
@@ -603,21 +637,21 @@ SELECT
     u.id_usuario,
     u.nombre,
     COALESCE(AVG(r.calificacion), 0) AS promedio_calificaciones,
-    COUNT(r.id_reseña) AS total_reseñas
+    COUNT(r.id_resena) AS total_resenas
 FROM usuario u
-LEFT JOIN reseña r ON u.id_usuario = r.id_vendedor
+LEFT JOIN resena r ON u.id_usuario = r.id_vendedor
 GROUP BY u.id_usuario, u.nombre;
 
 -- 9.3 Vista materializada de métricas (se refrescará periódicamente)
 CREATE MATERIALIZED VIEW vista_materializada_metricas AS
 SELECT 
     p.id_publicacion,
-    (SELECT COUNT(*) FROM likes l WHERE l.id_publicacion = p.id_publicacion) AS num_likes,
-    (SELECT COUNT(*) FROM comentario c WHERE c.id_publicacion = p.id_publicacion) AS num_comentarios,
-    (SELECT COUNT(*) FROM guardado g WHERE g.id_publicacion = p.id_publicacion) AS num_guardados,
-    (SELECT COUNT(*) FROM visualizacion v WHERE v.id_publicacion = p.id_publicacion) AS num_visualizaciones,
-    (SELECT COUNT(*) FROM evento_conversion e WHERE e.id_publicacion = p.id_publicacion AND e.tipo_evento = 'clic_comprar') AS num_conversiones,
-    calcular_tasa_conversion(p.id_publicacion) AS tasa_conversion
+    (SELECT COUNT(*) FROM public.likes l WHERE l.id_publicacion = p.id_publicacion) AS num_likes,
+    (SELECT COUNT(*) FROM public.comentario c WHERE c.id_publicacion = p.id_publicacion) AS num_comentarios,
+    (SELECT COUNT(*) FROM public.guardado g WHERE g.id_publicacion = p.id_publicacion) AS num_guardados,
+    (SELECT COUNT(*) FROM public.visualizacion v WHERE v.id_publicacion = p.id_publicacion) AS num_visualizaciones,
+    (SELECT COUNT(*) FROM public.evento_conversion e WHERE e.id_publicacion = p.id_publicacion AND e.tipo_evento = 'clic_comprar') AS num_conversiones,
+    (SELECT calcular_tasa_conversion(p.id_publicacion)) AS tasa_conversion
 FROM publicacion p;
 
 -- Crear índice único para refresco concurrente
@@ -630,7 +664,7 @@ CREATE UNIQUE INDEX idx_vista_materializada ON vista_materializada_metricas (id_
 -- Se crean roles a nivel de base de datos y se asignan permisos específicos.
 -- La aplicación usará un rol intermedio 'app_user' con permisos limitados.
 
-/*
+
 -- Crear roles (si no existen)
 DO $$
 BEGIN
@@ -661,7 +695,7 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO app_admin;
 -- CREATE USER app_user WITH PASSWORD 'secure_password';
 -- GRANT app_comprador TO app_user;
 -- (dependiendo del rol del usuario logueado, se cambiaría el rol en la conexión)
-*/
+
 
 -- ======================================================
 -- 11. DATOS INICIALES DE CATEGORÍAS (opcional)
