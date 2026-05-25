@@ -329,6 +329,13 @@
                 font-size: 1.1rem;
             }
         }
+        .product-card-hover {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .product-card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+        }
     </style>
 </head>
 
@@ -363,16 +370,29 @@
                                 class="bi bi-stars"></i> Para ti</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('content.saved_posts') }}"><i
                                 class="bi bi-bookmark"></i> Guardados</a></li>
+
                     {% if 'emprendedor' in current_user.roles %}
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('content.create_post') }}"><i
-                                class="bi bi-pencil-square"></i> Publicar</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('content.mis_productos') }}"><i
-                                class="bi bi-box-seam"></i> Productos</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('content.crear_producto') }}"><i
-                                class="bi bi-plus-circle"></i> Nuevo producto</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('content.my_stats') }}"><i
-                                class="bi bi-graph-up"></i> Estadísticas</a></li>
+                    <!-- Dropdown para opciones de emprendimiento -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-briefcase"></i> Emprendimiento
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('content.create_post') }}"><i
+                                        class="bi bi-pencil-square"></i> Crear publicación</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('content.mis_productos') }}"><i
+                                        class="bi bi-box-seam"></i> Mis productos</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('content.crear_producto') }}"><i
+                                        class="bi bi-plus-circle"></i> Nuevo producto</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('content.my_stats') }}"><i
+                                        class="bi bi-graph-up"></i> Estadísticas</a></li>
+                        </ul>
+                    </li>
                     {% endif %}
+
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="bi bi-person-circle"></i> {{ current_user.nombre.split()[0] }}
