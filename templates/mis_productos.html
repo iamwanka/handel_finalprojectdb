@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Mis productos</h2>
+<a href="{{ url_for('content.crear_producto') }}" class="btn btn-primary mb-3">+ Nuevo producto</a>
+<div class="row">
+    {% for prod in productos %}
+    <div class="col-md-4 mb-3">
+        <div class="card h-100">
+            {% if prod.imagen %}
+            <img src="{{ prod.imagen }}" class="card-img-top" style="height: 150px; object-fit: cover;">
+            {% else %}
+            <div class="bg-light text-center py-4"><i class="bi bi-image" style="font-size: 3rem;"></i></div>
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ prod.nombre }}</h5>
+                <p class="card-text">${{ prod.precio }}</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info">Aún no tienes productos. <a href="{{ url_for('content.crear_producto') }}">Crea uno</a></div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

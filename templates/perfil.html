@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <i class="bi bi-person-circle" style="font-size: 5rem;"></i>
+                <h3 class="mt-2">{{ user.nombre }}</h3>
+                <p class="text-muted">{{ user.email }}</p>
+                <p><i class="bi bi-calendar3"></i> Miembro desde: {{ user.fecha_registro.strftime('%d/%m/%Y') }}</p>
+                {% if user.telefono %}
+                <p><i class="bi bi-telephone"></i> {{ user.telefono }}</p>
+                {% endif %}
+                {% if user.calificacion_promedio %}
+                <p><i class="bi bi-star-fill text-warning"></i> {{ user.calificacion_promedio }} / 5 ({{ user.total_resenas }} reseñas)</p>
+                {% else %}
+                <p><i class="bi bi-star"></i> Sin reseñas aún</p>
+                {% endif %}
+                {% if es_propio %}
+                <a href="{{ url_for('content.editar_perfil') }}" class="btn btn-outline-primary btn-sm">Editar perfil</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h4>Publicaciones de {{ user.nombre }}</h4>
+                {% if posts %}
+                    {% for post in posts %}
+                    <div class="border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between">
+                            <h5><a href="{{ url_for('content.view_post', id=post.id_publicacion) }}">{{ post.titulo }}</a></h5>
+                            <small>{{ post.fecha_publicacion.strftime('%d/%m/%Y') }}</small>
+                        </div>
+                        <div class="d-flex gap-3 mt-1">
+                            <span><i class="bi bi-heart"></i> {{ post.num_likes }}</span>
+                            <span><i class="bi bi-chat"></i> {{ post.num_comentarios }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <!-- Paginación simplificada -->
+                    <nav>
+                        <ul class="pagination">
+                            <li class="page-item {% if pagina == 1 %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('content.perfil', id=user.id, pagina=pagina-1) if pagina > 1 else '#' }}">Anterior</a>
+                            </li>
+                            <li class="page-item disabled"><span class="page-link">Página {{ pagina }}</span></li>
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('content.perfil', id=user.id, pagina=pagina+1) }}">Siguiente</a>
+                            </li>
+                        </ul>
+                    </nav>
+                {% else %}
+                    <p class="text-muted">Este usuario no ha publicado nada aún.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

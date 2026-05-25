@@ -61,16 +61,20 @@ def ejecutar_funcion_tabla(funcion_name, *args):
         return resultados
 
 def obtener_productos_por_emprendedor(id_emprendedor):
-    """Devuelve lista de productos de un emprendedor."""
+    """Devuelve lista de productos de un emprendedor, incluyendo la primera imagen."""
     conn = get_db()
     with conn.cursor() as cur:
         cur.execute("""
-            SELECT id_producto, nombre, precio 
-            FROM producto 
-            WHERE id_emprendedor = %s AND estado = 'disponible'
-            ORDER BY nombre
+            SELECT 
+                p.id_producto, 
+                p.nombre, 
+                p.precio,
+                (SELECT url FROM imagen_producto WHERE id_producto = p.id_producto LIMIT 1) as imagen
+            FROM producto p
+            WHERE p.id_emprendedor = %s AND p.estado = 'disponible'
+            ORDER BY p.nombre
         """, (id_emprendedor,))
-        return [{'id': row[0], 'nombre': row[1], 'precio': float(row[2])} for row in cur.fetchall()]
+        return [{'id': row[0], 'nombre': row[1], 'precio': float(row[2]), 'imagen': row[3]} for row in cur.fetchall()]
 
 def obtener_comentarios_por_publicacion(id_publicacion):
     """Devuelve todos los comentarios de una publicación, ordenados jerárquicamente."""
@@ -145,3 +149,154 @@ def obtener_publicacion_por_id(id_publicacion):
             'nombre_emprendedor': row[6],
             'emprendedor_id': row[7]
         }
+
+def obtener_recomendaciones(id_usuario, limite=10):
+    """Llama a la función recomendar_publicaciones y devuelve lista de diccionarios."""
+    conn = get_db()
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM recomendar_publicaciones(%s, %s)", (id_usuario, limite))
+        columnas = [desc[0] for desc in cur.description]
+        resultados = [dict(zip(columnas, row)) for row in cur.fetchall()]
+        return resultados
+    
+def obtener_reporte_emprendedores(limite=10):
+    """Llama a la función reporte_emprendedores_top y devuelve lista de diccionarios."""
+    conn = get_db()
+    with conn.cursor() as cur:
+        cur.execute("SELECT * FROM reporte_emprendedores_top(%s)", (limite,))
+        columnas = [desc[0] for desc in cur.description]
+        resultados = [dict(zip(columnas, row)) for row in cur.fetchall()]
+        return resultados
+
+def toggle_guardado(id_usuario, id_publicacion):
+    """Llama a la función toggle_guardado y devuelve el nuevo estado (True=guardado, False=no guardado)."""
+    return ejecutar_funcion('toggle_guardado', id_usuario, id_publicacion)
+
+def obtener_guardados(id_usuario, pagina=1, limite=10):
+    """Devuelve publicaciones guardadas por el usuario (paginated)."""
+    conn = get_db()
+    offset = (pagina - 1) * limite
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT p.id_publicacion, p.titulo, p.tipo_contenido, p.url_multimedia,
+                   p.fecha_publicacion, u.nombre as emprendedor,
+                   (SELECT COUNT(*) FROM likes l WHERE l.id_publicacion = p.id_publicacion) as num_likes,
+                   (SELECT COUNT(*) FROM comentario c WHERE c.id_publicacion = p.id_publicacion) as num_comentarios
+            FROM guardado g
+            JOIN publicacion p ON g.id_publicacion = p.id_publicacion
+            JOIN usuario u ON p.id_emprendedor = u.id_usuario
+            WHERE g.id_usuario = %s AND p.activo = TRUE
+            ORDER BY g.fecha DESC
+            LIMIT %s OFFSET %s
+        """, (id_usuario, limite, offset))
+        columnas = [desc[0] for desc in cur.description]
+        posts = [dict(zip(columnas, row)) for row in cur.fetchall()]
+        return posts
+    
+def obtener_perfil_usuario(id_usuario):
+    """Devuelve información básica del usuario y su calificación promedio como vendedor."""
+    conn = get_db()
+    with conn.cursor() as cur:
+        # Datos básicos
+        cur.execute("SELECT id_usuario, nombre, email, fecha_registro, telefono, verificado FROM usuario WHERE id_usuario = %s", (id_usuario,))
+        user_row = cur.fetchone()
+        if not user_row:
+            return None
+        user = {
+            'id': user_row[0],
+            'nombre': user_row[1],
+            'email': user_row[2],
+            'fecha_registro': user_row[3],
+            'telefono': user_row[4],
+            'verificado': user_row[5]
+        }
+        # Calificación promedio como vendedor (desde reseñas)
+        cur.execute("SELECT AVG(calificacion) FROM resena WHERE id_vendedor = %s", (id_usuario,))
+        avg = cur.fetchone()[0]
+        user['calificacion_promedio'] = round(avg, 1) if avg else None
+        # Número de reseñas
+        cur.execute("SELECT COUNT(*) FROM resena WHERE id_vendedor = %s", (id_usuario,))
+        user['total_resenas'] = cur.fetchone()[0]
+        return user
+
+def obtener_publicaciones_por_usuario(id_usuario, pagina=1, limite=10):
+    """Devuelve publicaciones de un usuario (para mostrar en su perfil)."""
+    conn = get_db()
+    offset = (pagina - 1) * limite
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT id_publicacion, titulo, tipo_contenido, url_multimedia, fecha_publicacion,
+                   (SELECT COUNT(*) FROM likes WHERE id_publicacion = p.id_publicacion) as num_likes,
+                   (SELECT COUNT(*) FROM comentario WHERE id_publicacion = p.id_publicacion) as num_comentarios
+            FROM publicacion p
+            WHERE id_emprendedor = %s AND activo = TRUE
+            ORDER BY fecha_publicacion DESC
+            LIMIT %s OFFSET %s
+        """, (id_usuario, limite, offset))
+        columnas = [desc[0] for desc in cur.description]
+        posts = [dict(zip(columnas, row)) for row in cur.fetchall()]
+        return posts
+    
+def obtener_metricas_emprendedor(id_emprendedor):
+    """Devuelve métricas agregadas de las publicaciones y productos de un emprendedor."""
+    conn = get_db()
+    with conn.cursor() as cur:
+        # Métricas generales
+        cur.execute("""
+            SELECT 
+                COUNT(DISTINCT p.id_publicacion) as total_posts,
+                COUNT(DISTINCT l.id_usuario) as total_likes,
+                COUNT(DISTINCT c.id_comentario) as total_comentarios,
+                SUM(CASE WHEN ev.tipo_evento = 'clic_comprar' THEN 1 ELSE 0 END) as total_conversiones,
+                SUM(v.total_vis) as total_visualizaciones
+            FROM usuario u
+            LEFT JOIN publicacion p ON u.id_usuario = p.id_emprendedor AND p.activo = TRUE
+            LEFT JOIN likes l ON p.id_publicacion = l.id_publicacion
+            LEFT JOIN comentario c ON p.id_publicacion = c.id_publicacion
+            LEFT JOIN evento_conversion ev ON p.id_publicacion = ev.id_publicacion
+            LEFT JOIN (SELECT id_publicacion, COUNT(*) as total_vis FROM visualizacion GROUP BY id_publicacion) v ON p.id_publicacion = v.id_publicacion
+            WHERE u.id_usuario = %s
+        """, (id_emprendedor,))
+        row = cur.fetchone()
+        metrics = {
+            'total_posts': row[0] or 0,
+            'total_likes': row[1] or 0,
+            'total_comentarios': row[2] or 0,
+            'total_conversiones': row[3] or 0,
+            'total_visualizaciones': row[4] or 0
+        }
+        if metrics['total_visualizaciones']:
+            metrics['tasa_conversion'] = round(metrics['total_conversiones'] / metrics['total_visualizaciones'], 4)
+        else:
+            metrics['tasa_conversion'] = 0.0
+        
+        # Top 3 productos más vistos (asociados a sus publicaciones)
+        cur.execute("""
+            SELECT pr.nombre, COUNT(*) as total
+            FROM producto pr
+            JOIN publicacion_producto pp ON pr.id_producto = pp.id_producto
+            JOIN publicacion p ON pp.id_publicacion = p.id_publicacion
+            JOIN visualizacion v ON p.id_publicacion = v.id_publicacion
+            WHERE p.id_emprendedor = %s
+            GROUP BY pr.id_producto, pr.nombre
+            ORDER BY total DESC
+            LIMIT 3
+        """, (id_emprendedor,))
+        metrics['top_productos'] = [{'nombre': row[0], 'vistas': row[1]} for row in cur.fetchall()]
+        
+        # Rendimiento por publicación (últimas 5)
+        cur.execute("""
+            SELECT p.id_publicacion, p.titulo,
+                   (SELECT COUNT(*) FROM likes WHERE id_publicacion = p.id_publicacion) as likes,
+                   (SELECT COUNT(*) FROM comentario WHERE id_publicacion = p.id_publicacion) as comentarios,
+                   (SELECT COUNT(*) FROM visualizacion WHERE id_publicacion = p.id_publicacion) as visualizaciones,
+                   (SELECT COUNT(*) FROM evento_conversion WHERE id_publicacion = p.id_publicacion AND tipo_evento = 'clic_comprar') as conversiones
+            FROM publicacion p
+            WHERE p.id_emprendedor = %s AND p.activo = TRUE
+            ORDER BY p.fecha_publicacion DESC
+            LIMIT 5
+        """, (id_emprendedor,))
+        cols = ['id', 'titulo', 'likes', 'comentarios', 'visualizaciones', 'conversiones']
+        metrics['ultimas_publicaciones'] = [dict(zip(cols, row)) for row in cur.fetchall()]
+        
+        return metrics

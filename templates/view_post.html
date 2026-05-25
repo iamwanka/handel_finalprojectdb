@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
+<div class="mb-4">
+    <a href="{{ url_for('content.feed') }}"
+        class="text-decoration-none text-secondary mb-3 d-inline-flex align-items-center gap-2">
+        <i class="bi bi-chevron-left"></i> Volver al feed
+    </a>
+</div>
+
+<!-- Publicación Principal -->
+<div class="card post-card mb-4">
     <div class="card mb-4">
         <div class="card-body">
             <div class="d-flex justify-content-between">
@@ -9,19 +17,48 @@
             </div>
             <p><strong>Publicado por:</strong> {{ post.nombre_emprendedor }}</p>
             {% if post.tipo_contenido == 'video' %}
-                <div class="ratio ratio-16x9 mb-3">
-                    <iframe src="{{ post.url_multimedia|replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
-                </div>
+            <div class="ratio ratio-16x9 mb-3">
+                <iframe src="{{ post.url_multimedia|replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
+            </div>
             {% elif post.tipo_contenido == 'imagen' %}
-                <img src="{{ post.url_multimedia }}" class="img-fluid mb-3" alt="Imagen">
+            <img src="{{ post.url_multimedia }}" class="img-fluid mb-3" alt="Imagen">
             {% else %}
-                <p class="card-text">{{ post.descripcion }}</p>
+            <p class="card-text">{{ post.descripcion }}</p>
             {% endif %}
             {% if es_propietario %}
-                <a href="#" class="btn btn-sm btn-outline-secondary">Editar publicación</a>
+            <a href="#" class="btn btn-sm btn-outline-secondary">Editar publicación</a>
             {% endif %}
         </div>
     </div>
+
+    {% if productos %}
+    <div class="mt-3">
+        <strong>Productos asociados:</strong>
+        <div class="row">
+            {% for prod in productos %}
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    {% if prod.imagen %}
+                    <img src="{{ prod.imagen }}" class="card-img-top" alt="{{ prod.nombre }}"
+                        style="height: 150px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center"
+                        style="height: 150px;">
+                        <i class="bi bi-image" style="font-size: 3rem; color: #ccc;"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h6 class="card-title">{{ prod.nombre }}</h6>
+                        <p class="card-text">${{ prod.precio }}</p>
+                        <button class="btn btn-sm btn-success comprar-btn" data-producto-id="{{ prod.id }}"
+                            data-producto-nombre="{{ prod.nombre }}" data-precio="{{ prod.precio }}">Comprar</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 
     <h3>Comentarios</h3>
     <hr>
@@ -32,7 +69,8 @@
             <form method="POST" action="{{ url_for('content.view_post', id=post.id) }}">
                 <input type="hidden" name="padre_id" value="">
                 <div class="mb-3">
-                    <textarea name="texto" rows="2" class="form-control" placeholder="Escribe tu comentario..." required></textarea>
+                    <textarea name="texto" rows="2" class="form-control" placeholder="Escribe tu comentario..."
+                        required></textarea>
                 </div>
                 <button type="submit" class="btn btn-primary">Comentar</button>
             </form>
@@ -41,53 +79,55 @@
 
     <!-- Mostrar comentarios anidados -->
     {% if comentarios %}
-        <div class="list-group">
+    <div class="list-group">
         {% for comentario in comentarios %}
-            <div class="list-group-item" id="com-{{ comentario.id }}">
-                <div class="d-flex justify-content-between">
-                    <strong>{{ comentario.autor }}</strong>
-                    <small>{{ comentario.fecha.strftime('%d/%m/%Y %H:%M') }}</small>
-                </div>
-                <p class="mt-2">{{ comentario.texto }}</p>
-                <button class="btn btn-sm btn-link responder-btn" data-com-id="{{ comentario.id }}">Responder</button>
-                <!-- Respuestas anidadas -->
-                {% if comentario.respuestas %}
-                    <div class="mt-3 ms-4 border-start ps-3">
-                    {% for respuesta in comentario.respuestas %}
-                        <div class="mb-2" id="com-{{ respuesta.id }}">
-                            <div class="d-flex justify-content-between">
-                                <strong>{{ respuesta.autor }}</strong>
-                                <small>{{ respuesta.fecha.strftime('%d/%m/%Y %H:%M') }}</small>
-                            </div>
-                            <p>{{ respuesta.texto }}</p>
-                            <button class="btn btn-sm btn-link responder-btn" data-com-id="{{ respuesta.id }}">Responder</button>
-                        </div>
-                    {% endfor %}
-                    </div>
-                {% endif %}
-                <!-- Formulario de respuesta (oculto inicialmente) -->
-                <div class="respuesta-form mt-2" style="display: none;" data-parent="{{ comentario.id }}">
-                    <form method="POST" action="{{ url_for('content.view_post', id=post.id) }}">
-                        <input type="hidden" name="padre_id" value="{{ comentario.id }}">
-                        <textarea name="texto" rows="1" class="form-control" placeholder="Escribe tu respuesta..." required></textarea>
-                        <div class="mt-2">
-                            <button type="submit" class="btn btn-sm btn-primary">Responder</button>
-                            <button type="button" class="btn btn-sm btn-secondary cancelar-respuesta">Cancelar</button>
-                        </div>
-                    </form>
-                </div>
+        <div class="list-group-item" id="com-{{ comentario.id }}">
+            <div class="d-flex justify-content-between">
+                <strong>{{ comentario.autor }}</strong>
+                <small>{{ comentario.fecha.strftime('%d/%m/%Y %H:%M') }}</small>
             </div>
-        {% endfor %}
+            <p class="mt-2">{{ comentario.texto }}</p>
+            <button class="btn btn-sm btn-link responder-btn" data-com-id="{{ comentario.id }}">Responder</button>
+            <!-- Respuestas anidadas -->
+            {% if comentario.respuestas %}
+            <div class="mt-3 ms-4 border-start ps-3">
+                {% for respuesta in comentario.respuestas %}
+                <div class="mb-2" id="com-{{ respuesta.id }}">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ respuesta.autor }}</strong>
+                        <small>{{ respuesta.fecha.strftime('%d/%m/%Y %H:%M') }}</small>
+                    </div>
+                    <p>{{ respuesta.texto }}</p>
+                    <button class="btn btn-sm btn-link responder-btn"
+                        data-com-id="{{ respuesta.id }}">Responder</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <!-- Formulario de respuesta (oculto inicialmente) -->
+            <div class="respuesta-form mt-2" style="display: none;" data-parent="{{ comentario.id }}">
+                <form method="POST" action="{{ url_for('content.view_post', id=post.id) }}">
+                    <input type="hidden" name="padre_id" value="{{ comentario.id }}">
+                    <textarea name="texto" rows="1" class="form-control" placeholder="Escribe tu respuesta..."
+                        required></textarea>
+                    <div class="mt-2">
+                        <button type="submit" class="btn btn-sm btn-primary">Responder</button>
+                        <button type="button" class="btn btn-sm btn-secondary cancelar-respuesta">Cancelar</button>
+                    </div>
+                </form>
+            </div>
         </div>
+        {% endfor %}
+    </div>
     {% else %}
-        <div class="alert alert-info">No hay comentarios aún. ¡Sé el primero en comentar!</div>
+    <div class="alert alert-info">No hay comentarios aún. ¡Sé el primero en comentar!</div>
     {% endif %}
 </div>
 
 <script>
     // Mostrar formulario de respuesta al hacer clic en "Responder"
     document.querySelectorAll('.responder-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const comId = this.dataset.comId;
             // Ocultar otros formularios abiertos
             document.querySelectorAll('.respuesta-form').forEach(form => {
@@ -101,8 +141,52 @@
     });
     // Cancelar respuesta
     document.querySelectorAll('.cancelar-respuesta').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             this.closest('.respuesta-form').style.display = 'none';
+        });
+    });
+</script>
+<!-- Modal de confirmación de compra -->
+<div class="modal fade" id="compraModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar compra</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Producto: <strong id="productoNombre"></strong></p>
+                <p>Precio: $<span id="productoPrecio"></span></p>
+                <p>Total a pagar: $<span id="totalPagar"></span></p>
+                <form id="compraForm" method="POST" action="{{ url_for('content.finalizar_compra') }}">
+                    <input type="hidden" name="id_producto" id="productoIdInput">
+                    <input type="hidden" name="monto" id="montoInput">
+                    <div class="mb-3">
+                        <label>Método de pago (demo)</label>
+                        <select name="metodo_pago" class="form-select" required>
+                            <option value="efectivo">Efectivo (simulado)</option>
+                            <option value="tarjeta">Tarjeta (simulado)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Confirmar compra</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.comprar-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const productoId = this.dataset.productoId;
+            const productoNombre = this.dataset.productoNombre;
+            const precio = this.dataset.precio;
+            document.getElementById('productoNombre').innerText = productoNombre;
+            document.getElementById('productoPrecio').innerText = precio;
+            document.getElementById('totalPagar').innerText = precio;
+            document.getElementById('productoIdInput').value = productoId;
+            document.getElementById('montoInput').value = precio;
+            new bootstrap.Modal(document.getElementById('compraModal')).show();
         });
     });
 </script>

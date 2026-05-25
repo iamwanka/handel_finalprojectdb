@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Mis publicaciones guardadas</h2>
+{% if posts %}
+    {% for post in posts %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between">
+                <h5 class="card-title">{{ post.titulo }}</h5>
+                <small class="text-muted">{{ post.fecha_publicacion.strftime('%d/%m/%Y %H:%M') }}</small>
+            </div>
+            <p class="card-text">Por <strong>{{ post.emprendedor }}</strong></p>
+            {% if post.tipo_contenido == 'video' %}
+                <div class="ratio ratio-16x9 mb-2">
+                    <iframe src="{{ post.url_multimedia|replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
+                </div>
+            {% elif post.tipo_contenido == 'imagen' %}
+                <img src="{{ post.url_multimedia }}" class="img-fluid mb-2" alt="Imagen">
+            {% endif %}
+            <div class="d-flex gap-3 mt-2">
+                <span><i class="bi bi-heart"></i> {{ post.num_likes }}</span>
+                <span><i class="bi bi-chat"></i> {{ post.num_comentarios }}</span>
+                <a href="{{ url_for('content.view_post', id=post.id_publicacion) }}" class="btn btn-sm btn-outline-primary">Ver publicación</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-info">No has guardado ninguna publicación todavía.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Registro de Auditoría</h2>
+<a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary mb-3">← Volver al panel</a>
+
+<!-- Filtros -->
+<form method="GET" class="row g-3 mb-4">
+    <div class="col-auto">
+        <select name="tabla" class="form-select">
+            <option value="">Todas las tablas</option>
+            {% for t in tablas %}
+            <option value="{{ t }}" {% if filtro_tabla == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <select name="accion" class="form-select">
+            <option value="">Todas las acciones</option>
+            {% for a in acciones %}
+            <option value="{{ a }}" {% if filtro_accion == a %}selected{% endif %}>{{ a }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="{{ url_for('admin.ver_auditoria') }}" class="btn btn-secondary">Limpiar</a>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped table-bordered table-sm">
+        <thead class="table-dark">
+            <tr>
+                {% for col in columnas %}
+                <th>{{ col }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                {% for val in row %}
+                <td style="max-width: 300px; overflow-x: auto;">
+                    {% if val is not none and val|string|length > 100 %}
+                        <details>
+                            <summary>Ver contenido</summary>
+                            <pre class="mb-0"><code>{{ val|tojson|safe }}</code></pre>
+                        </details>
+                    {% else %}
+                        {{ val }}
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ columnas|length }}">No hay registros de auditoría</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

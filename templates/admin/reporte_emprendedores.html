@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Reporte de Emprendedores Más Activos</h2>
+<a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary mb-3">← Volver al panel</a>
+
+<div class="table-responsive">
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Emprendedor</th>
+                <th>Publicaciones</th>
+                <th>Likes recibidos</th>
+                <th>Comentarios recibidos</th>
+                <th>Productos vendidos</th>
+                <th>Ingreso total</th>
+                <th>Puntuación</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for emp in reporte %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ emp.nombre_emprendedor }}</td>
+                <td>{{ emp.total_publicaciones }}</td>
+                <td>{{ emp.total_likes_recibidos }}</td>
+                <td>{{ emp.total_comentarios_recibidos }}</td>
+                <td>{{ emp.total_productos_vendidos }}</td>
+                <td>${{ "{:,.0f}".format(emp.ingreso_total or 0) }}</td>
+                <td>{{ "%.2f"|format(emp.puntuacion_final or 0) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8">No hay emprendedores registrados</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

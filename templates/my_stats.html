@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Mis estadísticas</h2>
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Publicaciones</h5>
+                <p class="display-4">{{ metrics.total_posts }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Likes recibidos</h5>
+                <p class="display-4">{{ metrics.total_likes }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Comentarios</h5>
+                <p class="display-4">{{ metrics.total_comentarios }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Visualizaciones</h5>
+                <p class="display-4">{{ metrics.total_visualizaciones }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">Tasa de conversión</div>
+            <div class="card-body">
+                <h3>{{ "%.2f"|format(metrics.tasa_conversion * 100) }}%</h3>
+                <p>Compras iniciadas / visualizaciones</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">Top 3 productos más vistos</div>
+            <div class="card-body">
+                {% if metrics.top_productos %}
+                <ul>
+                    {% for prod in metrics.top_productos %}
+                    <li>{{ prod.nombre }}: {{ prod.vistas }} vistas</li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>No hay datos aún</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header">Últimas publicaciones</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead><tr><th>Título</th><th>Likes</th><th>Comentarios</th><th>Visitas</th><th>Conversiones</th></tr></thead>
+                <tbody>
+                {% for pub in metrics.ultimas_publicaciones %}
+                <tr>
+                    <td><a href="{{ url_for('content.view_post', id=pub.id) }}">{{ pub.titulo }}</a></td>
+                    <td>{{ pub.likes }}</td>
+                    <td>{{ pub.comentarios }}</td>
+                    <td>{{ pub.visualizaciones }}</td>
+                    <td>{{ pub.conversiones }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5">No hay publicaciones</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Mis compras</h2>
+{% if purchases %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr><th>Fecha</th><th>Producto</th><th>Vendedor</th><th>Monto</th><th>Estado</th><th>Calificación</th><th>Reseña</th></tr>
+        </thead>
+        <tbody>
+            {% for compra in purchases %}
+            <tr>
+                <td>{{ compra.fecha.strftime('%d/%m/%Y') }}</td>
+                <td>{{ compra.producto }}</td>
+                <td>{{ compra.vendedor }}</td>
+                <td>${{ "{:,.0f}".format(compra.monto) }}</td>
+                <td>{{ compra.estado }}</td>
+                <td>{% if compra.calificacion %}{{ compra.calificacion }}★{% else %}No calificado{% endif %}</td>
+                <td>{{ compra.comentario or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">Aún no has realizado compras.</div>
+{% endif %}
+<a href="{{ url_for('content.feed') }}" class="btn btn-secondary">Volver al feed</a>
+{% endblock %}

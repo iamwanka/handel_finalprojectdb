@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
-from services.db_service import ejecutar_funcion
+from services.db_service import ejecutar_funcion, toggle_guardado
 
 likes_bp = Blueprint('likes', __name__)
 
@@ -23,6 +23,30 @@ def toggle_like():
         return jsonify({
             'success': True,
             'liked': nuevo_estado,
+            'count': count
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@likes_bp.route('/guardar/toggle', methods=['POST'])
+@login_required
+def toggle_guardar():
+    data = request.get_json()
+    id_publicacion = data.get('id_publicacion')
+    if not id_publicacion:
+        return jsonify({'error': 'Falta id_publicacion'}), 400
+    
+    try:
+        nuevo_estado = toggle_guardado(current_user.id, id_publicacion)
+        # Obtener nuevo conteo de guardados
+        from services.db_service import get_db
+        conn = get_db()
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM guardado WHERE id_publicacion = %s", (id_publicacion,))
+            count = cur.fetchone()[0]
+        return jsonify({
+            'success': True,
+            'saved': nuevo_estado,
             'count': count
         })
     except Exception as e:

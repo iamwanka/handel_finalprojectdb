@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2>Califica tu compra</h2>
+        <p>Producto: <strong>{{ nombre_producto }}</strong></p>
+        <p>Vendedor: {{ vendedor }}</p>
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Calificación (1-5 estrellas)</label>
+                <select name="calificacion" class="form-select" required>
+                    <option value="">Selecciona</option>
+                    <option value="5">★★★★★ (Excelente)</option>
+                    <option value="4">★★★★☆ (Muy bueno)</option>
+                    <option value="3">★★★☆☆ (Bueno)</option>
+                    <option value="2">★★☆☆☆ (Regular)</option>
+                    <option value="1">★☆☆☆☆ (Malo)</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Comentario (opcional)</label>
+                <textarea name="comentario" class="form-control" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Enviar reseña</button>
+            <a href="{{ url_for('content.feed') }}" class="btn btn-secondary">Omitir</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

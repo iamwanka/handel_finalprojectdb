@@ -338,7 +338,9 @@ RETURNS TABLE(
     nombre_emprendedor VARCHAR,
     num_likes BIGINT,
     num_comentarios BIGINT,
-    me_gusta BOOLEAN
+    num_guardados BIGINT,
+    me_gusta BOOLEAN,
+    me_guardado BOOLEAN
 )
 LANGUAGE plpgsql
 STABLE
@@ -355,10 +357,12 @@ BEGIN
         p.tipo_contenido,
         p.url_multimedia,
         p.fecha_publicacion,
-        u.nombre AS nombre_emprendedor,
+        u.nombre,
         (SELECT COUNT(*) FROM likes l WHERE l.id_publicacion = p.id_publicacion) AS num_likes,
         (SELECT COUNT(*) FROM comentario c WHERE c.id_publicacion = p.id_publicacion) AS num_comentarios,
-        EXISTS (SELECT 1 FROM likes l WHERE l.id_publicacion = p.id_publicacion AND l.id_usuario = p_id_usuario) AS me_gusta
+        (SELECT COUNT(*) FROM guardado g WHERE g.id_publicacion = p.id_publicacion) AS num_guardados,
+        EXISTS (SELECT 1 FROM likes l WHERE l.id_publicacion = p.id_publicacion AND l.id_usuario = p_id_usuario) AS me_gusta,
+        EXISTS (SELECT 1 FROM guardado g WHERE g.id_publicacion = p.id_publicacion AND g.id_usuario = p_id_usuario) AS me_guardado
     FROM publicacion p
     JOIN usuario u ON p.id_emprendedor = u.id_usuario
     WHERE p.activo = TRUE
@@ -526,6 +530,153 @@ BEGIN
     -- Aquí podríamos también actualizar el contador de ventas del emprendedor, etc.
     
     RAISE NOTICE 'Transacción % registrada exitosamente', v_id_transaccion;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION recomendar_publicaciones(
+    p_id_usuario INTEGER,
+    p_limite INTEGER DEFAULT 10
+)
+RETURNS TABLE(
+    id_publicacion INTEGER,
+    titulo VARCHAR,
+    descripcion TEXT,
+    fecha_publicacion TIMESTAMPTZ,
+    nombre_emprendedor VARCHAR,
+    puntuacion DECIMAL,
+    razon TEXT
+)
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_categorias_interes INTEGER[];
+BEGIN
+    -- Obtener categorías de productos que el usuario ha comprado o a los que ha dado like
+    SELECT ARRAY_AGG(DISTINCT id_categoria)
+    INTO v_categorias_interes
+    FROM (
+        -- Categorías de productos comprados
+        SELECT pr.id_categoria
+        FROM transaccion t
+        JOIN producto pr ON t.id_producto = pr.id_producto
+        WHERE t.id_comprador = p_id_usuario
+        UNION
+        -- Categorías de productos en publicaciones que el usuario ha likeado
+        SELECT pr.id_categoria
+        FROM likes l
+        JOIN publicacion p ON l.id_publicacion = p.id_publicacion
+        JOIN publicacion_producto pp ON p.id_publicacion = pp.id_publicacion
+        JOIN producto pr ON pp.id_producto = pr.id_producto
+        WHERE l.id_usuario = p_id_usuario
+    ) AS categorias(id_categoria);
+    
+    RETURN QUERY
+    SELECT DISTINCT ON (p.id_publicacion)
+        p.id_publicacion,
+        p.titulo,
+        p.descripcion,
+        p.fecha_publicacion,
+        u.nombre AS nombre_emprendedor,
+        -- Puntuación: peso 3 si coincide categoría de compra, 1 si solo like, 0.5 si reciente
+        (CASE 
+            WHEN BOOL_OR(pr.id_categoria = ANY(v_categorias_interes)) THEN 3.0
+            ELSE 1.0
+         END + 
+         CASE 
+            WHEN p.fecha_publicacion > CURRENT_DATE - INTERVAL '7 days' THEN 0.5
+            ELSE 0
+         END)::DECIMAL AS puntuacion,
+        -- Razón textual (para debug)
+        CASE 
+            WHEN BOOL_OR(pr.id_categoria = ANY(v_categorias_interes)) THEN 'Basado en tus compras/likes'
+            ELSE 'Publicación reciente'
+        END AS razon
+    FROM publicacion p
+    JOIN usuario u ON p.id_emprendedor = u.id_usuario
+    JOIN publicacion_producto pp ON p.id_publicacion = pp.id_publicacion
+    JOIN producto pr ON pp.id_producto = pr.id_producto
+    WHERE p.activo = TRUE
+      AND p.id_publicacion NOT IN (
+          SELECT v.id_publicacion FROM visualizacion v WHERE v.id_usuario = p_id_usuario
+      )
+    GROUP BY p.id_publicacion, p.titulo, p.descripcion, p.fecha_publicacion, u.nombre
+    ORDER BY p.id_publicacion, puntuacion DESC, p.fecha_publicacion DESC
+    LIMIT p_limite;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION reporte_emprendedores_top(
+    p_limite INTEGER DEFAULT 10
+)
+RETURNS TABLE(
+    id_emprendedor INTEGER,
+    nombre_emprendedor VARCHAR,
+    total_publicaciones BIGINT,
+    total_likes_recibidos BIGINT,
+    total_comentarios_recibidos BIGINT,
+    total_productos_vendidos BIGINT,
+    ingreso_total DECIMAL,
+    puntuacion_final DECIMAL
+)
+LANGUAGE plpgsql
+STABLE
+AS $$
+BEGIN
+    RETURN QUERY
+    WITH estadisticas AS (
+        SELECT 
+            u.id_usuario,
+            u.nombre,
+            COUNT(DISTINCT p.id_publicacion) AS pubs,
+            COUNT(DISTINCT l.id_publicacion) AS likes_rec,
+            COUNT(DISTINCT c.id_comentario) AS comments_rec,
+            COUNT(DISTINCT t.id_transaccion) AS ventas,
+            COALESCE(SUM(t.monto), 0) AS ingresos
+        FROM usuario u
+        LEFT JOIN publicacion p ON u.id_usuario = p.id_emprendedor AND p.activo = TRUE
+        LEFT JOIN likes l ON p.id_publicacion = l.id_publicacion
+        LEFT JOIN comentario c ON p.id_publicacion = c.id_publicacion
+        LEFT JOIN producto prod ON u.id_usuario = prod.id_emprendedor
+        LEFT JOIN transaccion t ON prod.id_producto = t.id_producto AND t.estado = 'completada'
+        WHERE EXISTS (SELECT 1 FROM usuario_rol ur WHERE ur.id_usuario = u.id_usuario AND ur.id_rol = (SELECT id_rol FROM rol WHERE nombre_rol = 'emprendedor'))
+        GROUP BY u.id_usuario, u.nombre
+    )
+    SELECT 
+        e.id_usuario,
+        e.nombre,
+        e.pubs,
+        e.likes_rec,
+        e.comments_rec,
+        e.ventas,
+        e.ingresos,
+        (e.pubs * 2 + e.likes_rec * 0.5 + e.comments_rec * 0.3 + e.ventas * 5 + e.ingresos / 1000) AS puntuacion_final
+    FROM estadisticas e
+    ORDER BY puntuacion_final DESC
+    LIMIT p_limite;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION toggle_guardado(
+    p_id_usuario INTEGER,
+    p_id_publicacion INTEGER
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_existe BOOLEAN;
+BEGIN
+    SELECT EXISTS (SELECT 1 FROM guardado WHERE id_usuario = p_id_usuario AND id_publicacion = p_id_publicacion) INTO v_existe;
+    
+    IF v_existe THEN
+        DELETE FROM guardado WHERE id_usuario = p_id_usuario AND id_publicacion = p_id_publicacion;
+        RETURN FALSE;  -- Indica que se quitó de guardados
+    ELSE
+        INSERT INTO guardado (id_usuario, id_publicacion) VALUES (p_id_usuario, p_id_publicacion);
+        RETURN TRUE;   -- Indica que se agregó a guardados
+    END IF;
 END;
 $$;
 

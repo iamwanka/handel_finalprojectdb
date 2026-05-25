@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2>Nuevo producto</h2>
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Nombre del producto *</label>
+                <input type="text" name="nombre" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea name="descripcion" rows="2" class="form-control"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Precio (COP) *</label>
+                <input type="number" step="0.01" name="precio" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Categoría *</label>
+                <select name="id_categoria" class="form-select" required>
+                    <option value="">Selecciona</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat[0] }}">{{ cat[1] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">URL de imagen (opcional)</label>
+                <input type="url" name="imagen_url" class="form-control" placeholder="https://...">
+                <small class="text-muted">Puedes usar una URL de imagen pública.</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar producto</button>
+            <a href="{{ url_for('content.mis_productos') }}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,46 +1,150 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Feed de publicaciones</h2>
+<div class="mb-4">
+    <h2 class="fw-bold">Descubre emprendimientos</h2>
+    <p class="text-secondary">Conecta con emprendedores de la Universidad de la Amazonia</p>
+</div>
+
 {% if posts %}
-    {% for post in posts %}
-    <div class="card mb-3">
-        <div class="card-body">
-            <div class="d-flex justify-content-between">
-                <h5 class="card-title">{{ post.titulo }}</h5>
-                <small class="text-muted">{{ post.fecha_publicacion.strftime('%d/%m/%Y %H:%M') }}</small>
-            </div>
-            <p class="card-text">Por: <strong>{{ post.nombre_emprendedor }}</strong></p>
-            {% if post.tipo_contenido == 'video' %}
-                <div class="ratio ratio-16x9 mb-2">
-                    <iframe src="{{ post.url_multimedia|replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
+{% for post in posts %}
+<div class="card post-card">
+    <div class="card-body">
+        <!-- Header: Emprendedor + Fecha + Badge -->
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div class="d-flex align-items-center gap-2" style="flex: 1;">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center"
+                    style="width: 40px; height: 40px;">
+                    <i class="bi bi-person-fill" style="color: #0d6efd; font-size: 1.2rem;"></i>
                 </div>
+                <div>
+                    <p class="mb-0 fw-600" style="color: #1a1a1a;">{{ post.nombre_emprendedor }}</p>
+                    <small style="color: #999;">{{ post.fecha_publicacion.strftime('%d de %b, %H:%M') }}</small>
+                </div>
+            </div>
+            {% if post.tipo_contenido == 'video' %}
+            <span class="badge bg-light text-primary rounded-pill px-2 py-1"
+                style="font-size: 0.75rem; font-weight: 500;">
+                <i class="bi bi-camera-reels"></i> Video
+            </span>
             {% elif post.tipo_contenido == 'imagen' %}
-                <img src="{{ post.url_multimedia }}" class="img-fluid mb-2" alt="Imagen">
+            <span class="badge bg-light text-primary rounded-pill px-2 py-1"
+                style="font-size: 0.75rem; font-weight: 500;">
+                <i class="bi bi-image"></i> Imagen
+            </span>
             {% else %}
-                <p class="card-text">{{ post.descripcion }}</p>
+            <span class="badge bg-light text-primary rounded-pill px-2 py-1"
+                style="font-size: 0.75rem; font-weight: 500;">
+                <i class="bi bi-file-text"></i> Texto
+            </span>
             {% endif %}
-            <div class="d-flex gap-3 mt-2">
-                <span class="like-btn" style="cursor: pointer;" onclick="toggleLike({{ post.id_publicacion }}, this)">
-                    <i class="bi bi-heart{% if post.me_gusta %}-fill text-danger{% endif %}"></i> <span>{{ post.num_likes }}</span>
-                </span>
-                <span><i class="bi bi-chat"></i> {{ post.num_comentarios }}</span>
-                <a href="{{ url_for('content.view_post', id=post.id_publicacion) }}" class="btn btn-sm btn-outline-primary">Ver comentarios</a>
+        </div>
+
+        <!-- Título y Contenido -->
+        <h5 class="card-title fw-bold mb-2" style="color: #1a1a1a;">{{ post.titulo }}</h5>
+
+        {% if post.tipo_contenido == 'video' %}
+        <div class="ratio ratio-16x9 mb-3 rounded-3" style="overflow: hidden;">
+            <iframe src="{{ post.url_multimedia|replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
+        </div>
+        {% elif post.tipo_contenido == 'imagen' %}
+        <img src="{{ post.url_multimedia }}" class="img-fluid rounded-3 mb-3" alt="Publicación"
+            style="max-height: 400px; object-fit: cover; width: 100%;">
+        {% else %}
+        <p class="card-text text-secondary mb-3">{{ post.descripcion }}</p>
+        {% endif %}
+
+        <!-- Productos (si existen) -->
+        {% if post.productos %}
+        <div class="mb-3 pb-3" style="border-bottom: 1px solid #e5e7eb;">
+            <small class="text-secondary fw-500 d-block mb-2"><i class="bi bi-box-seam"></i> Productos
+                destacados</small>
+            <div class="d-flex flex-wrap gap-2">
+                {% for prod in post.productos %}
+                <div class="border rounded-2 p-2"
+                    style="width: 100px; text-align: center; background: #f9fafb; border-color: #e5e7eb;">
+                    {% if prod.imagen %}
+                    <img src="{{ prod.imagen }}" class="rounded-2 mb-1"
+                        style="width: 100%; height: 60px; object-fit: cover;">
+                    {% endif %}
+                    <div class="small fw-500" style="color: #1a1a1a;">{{ prod.nombre[:18] }}</div>
+                    <div class="small text-primary fw-600 mb-1">${{ prod.precio }}</div>
+                    <button class="btn btn-sm btn-outline-primary w-100 comprar-feed-btn rounded-2"
+                        data-producto-id="{{ prod.id }}" data-producto-nombre="{{ prod.nombre }}"
+                        data-precio="{{ prod.precio }}" style="font-size: 0.75rem; padding: 0.25rem;">
+                        Comprar
+                    </button>
+                </div>
+                {% endfor %}
             </div>
         </div>
+        {% endif %}
+
+        <!-- Acciones: Like, Guardar, Comentarios -->
+        <div class="d-flex gap-3 align-items-center" style="border-top: 1px solid #e5e7eb; padding-top: 1rem;">
+            <div class="action-link" onclick="toggleLike({{ post.id_publicacion }}, this)">
+                <i class="bi {% if post.me_gusta %}bi-heart-fill text-danger{% else %}bi-heart{% endif %}"
+                    style="font-size: 1.1rem;"></i>
+                <span class="like-count">{{ post.num_likes }}</span>
+            </div>
+
+            <div class="action-link" onclick="toggleGuardar({{ post.id_publicacion }}, this)">
+                <i class="bi {% if post.me_guardado %}bi-bookmark-fill{% else %}bi-bookmark{% endif %}"
+                    style="font-size: 1.1rem;"></i>
+                <span id="save-count-{{ post.id_publicacion }}">{{ post.num_guardados|default(0) }}</span>
+            </div>
+
+            <a href="{{ url_for('content.view_post', id=post.id_publicacion) }}" class="action-link ms-auto">
+                <i class="bi bi-chat" style="font-size: 1.1rem;"></i>
+                <span>{{ post.num_comentarios }}</span>
+                <span>Comentarios</span>
+            </a>
+        </div>
     </div>
-    {% endfor %}
-    <nav>
-        <ul class="pagination">
-            <li class="page-item {% if pagina == 1 %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('content.feed', pagina=pagina-1) if pagina > 1 else '#' }}">Anterior</a>
-            </li>
-            <li class="page-item disabled"><span class="page-link">Página {{ pagina }}</span></li>
-            <li class="page-item">
-                <a class="page-link" href="{{ url_for('content.feed', pagina=pagina+1) }}">Siguiente</a>
-            </li>
-        </ul>
-    </nav>
+</div>
+{% endfor %}
+
+<!-- Paginación -->
+<nav class="mt-5" aria-label="Paginación">
+    <ul class="pagination justify-content-center">
+        <li class="page-item {% if pagina == 1 %}disabled{% endif %}">
+            <a class="page-link rounded-2" href="{{ url_for('content.feed', pagina=pagina-1) if pagina > 1 else '#' }}"
+                style="border-color: #e5e7eb; color: #0d6efd;">
+                <i class="bi bi-chevron-left"></i> Anterior
+            </a>
+        </li>
+        <li class="page-item disabled">
+            <span class="page-link rounded-2" style="border-color: #e5e7eb; background: #f9fafb;">Página {{ pagina
+                }}</span>
+        </li>
+        <li class="page-item">
+            <a class="page-link rounded-2" href="{{ url_for('content.feed', pagina=pagina+1) }}"
+                style="border-color: #e5e7eb; color: #0d6efd;">
+                Siguiente <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+    </ul>
+</nav>
 {% else %}
-    <div class="alert alert-info">No hay publicaciones aún. ¡Sé el primero en publicar!</div>
+<div class="alert alert-info text-center rounded-3" style="border: none; padding: 2rem;">
+    <i class="bi bi-inbox" style="font-size: 2.5rem; opacity: 0.5;"></i>
+    <h5 class="mt-3">No hay publicaciones aún</h5>
+    <p class="text-secondary mb-0">Sé el primero en compartir tu emprendimiento</p>
+</div>
 {% endif %}
+
+<script>
+    document.querySelectorAll('.comprar-feed-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const productoId = this.dataset.productoId;
+            const productoNombre = this.dataset.productoNombre;
+            const precio = this.dataset.precio;
+            document.getElementById('productoNombre').innerText = productoNombre;
+            document.getElementById('productoPrecio').innerText = precio;
+            document.getElementById('totalPagar').innerText = precio;
+            document.getElementById('productoIdInput').value = productoId;
+            document.getElementById('montoInput').value = precio;
+            new bootstrap.Modal(document.getElementById('compraModal')).show();
+        });
+    });
+</script>
 {% endblock %}

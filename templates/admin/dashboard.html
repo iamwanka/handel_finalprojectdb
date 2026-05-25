@@ -39,4 +39,26 @@
         </div>
     </div>
 </div>
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Auditoría</h5>
+                <p class="card-text">Ver cambios realizados en la base de datos.</p>
+                <a href="{{ url_for('admin.ver_auditoria') }}" class="btn btn-dark">Ver auditoría</a>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Reportes</h5>
+                <p class="card-text">Estadísticas de emprendedores más activos.</p>
+                <a href="{{ url_for('admin.reporte_emprendedores') }}" class="btn btn-dark">Ver ranking</a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
