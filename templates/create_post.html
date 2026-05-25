@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2>Nueva publicación</h2>
+        <form method="POST">
+            <div class="mb-3">
+                <label class="form-label">Título *</label>
+                <input type="text" name="titulo" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea name="descripcion" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Tipo de contenido *</label>
+                <select name="tipo_contenido" id="tipo_contenido" class="form-select" required>
+                    <option value="">Selecciona...</option>
+                    <option value="video">Video</option>
+                    <option value="imagen">Imagen</option>
+                    <option value="texto">Solo texto</option>
+                </select>
+            </div>
+            <div class="mb-3" id="url_div" style="display: none;">
+                <label class="form-label">URL del contenido</label>
+                <input type="url" name="url_multimedia" class="form-control" placeholder="https://...">
+                <small class="text-muted">Para video (YouTube) o imagen. Si es de YouTube, se convertirá automáticamente a formato embed.</small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Productos asociados (opcional, puedes seleccionar varios)</label>
+                <select name="productos_ids" multiple class="form-select" size="5">
+                    {% for prod in productos %}
+                    <option value="{{ prod.id }}">{{ prod.nombre }} - ${{ prod.precio }}</option>
+                    {% else %}
+                    <option disabled>No tienes productos aún. <a href="#">Crea uno primero</a></option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">Mantén presionado Ctrl (Windows) o Cmd (Mac) para seleccionar múltiples.</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Publicar</button>
+            <a href="{{ url_for('content.feed') }}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+<script>
+    document.getElementById('tipo_contenido').addEventListener('change', function() {
+        var urlDiv = document.getElementById('url_div');
+        if (this.value === 'video' || this.value === 'imagen') {
+            urlDiv.style.display = 'block';
+        } else {
+            urlDiv.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

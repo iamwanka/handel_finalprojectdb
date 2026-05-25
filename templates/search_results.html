@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Resultados de búsqueda para: "{{ query }}"</h2>
+{% if results %}
+    <p>Encontradas {{ results|length }} publicaciones (página {{ pagina }})</p>
+    {% for post in results %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">{{ post.titulo }}</h5>
+            <p class="card-text">{{ post.descripcion|truncate(150) }}</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">Por {{ post.nombre_emprendedor }}</small>
+                <small>{{ post.fecha_publicacion.strftime('%d/%m/%Y %H:%M') }}</small>
+            </div>
+            <a href="{{ url_for('content.view_post', id=post.id_publicacion) }}" class="btn btn-sm btn-outline-primary mt-2">Ver publicación</a>
+        </div>
+    </div>
+    {% endfor %}
+    <nav>
+        <ul class="pagination">
+            <li class="page-item {% if pagina == 1 %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('content.search', q=query, pagina=pagina-1) if pagina > 1 else '#' }}">Anterior</a>
+            </li>
+            <li class="page-item disabled"><span class="page-link">Página {{ pagina }}</span></li>
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('content.search', q=query, pagina=pagina+1) }}">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+{% else %}
+    <div class="alert alert-info">No se encontraron publicaciones con "{{ query }}"</div>
+{% endif %}
+{% endblock %}

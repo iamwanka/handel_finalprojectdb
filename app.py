@@ -30,15 +30,15 @@ def inject_user():
 # Registrar blueprints (los definiremos después)
 from routes.auth import auth_bp
 from routes.content import content_bp
-# from routes.admin import admin_bp
+from routes.admin import admin_bp
 # from routes.comments import comments_bp
-# from routes.likes import likes_bp
+from routes.likes import likes_bp
 
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(content_bp)
-# app.register_blueprint(admin_bp, url_prefix='/admin')
+app.register_blueprint(admin_bp, url_prefix='/admin')
 # app.register_blueprint(comments_bp, url_prefix='/comments')
-# app.register_blueprint(likes_bp, url_prefix='/likes')
+app.register_blueprint(likes_bp, url_prefix='/likes')
 
 @app.route('/')
 def index():

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Panel de Administración</h2>
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Usuarios</h5>
+                <p class="card-text display-4">{{ total_usuarios }}</p>
+                <a href="{{ url_for('admin.ver_tabla', tabla='usuario') }}" class="btn btn-light">Ver</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Publicaciones</h5>
+                <p class="card-text display-4">{{ total_publicaciones }}</p>
+                <a href="{{ url_for('admin.ver_tabla', tabla='publicacion') }}" class="btn btn-light">Ver</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Productos</h5>
+                <p class="card-text display-4">{{ total_productos }}</p>
+                <a href="{{ url_for('admin.ver_tabla', tabla='producto') }}" class="btn btn-light">Ver</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Comentarios</h5>
+                <p class="card-text display-4">{{ total_comentarios }}</p>
+                <a href="{{ url_for('admin.ver_tabla', tabla='comentario') }}" class="btn btn-light">Ver</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

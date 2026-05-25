@@ -1,5 +1,46 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Feed de publicaciones</h2>
-<p>Próximamente mostraré las publicaciones usando la función obtener_feed().</p>
+{% if posts %}
+    {% for post in posts %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between">
+                <h5 class="card-title">{{ post.titulo }}</h5>
+                <small class="text-muted">{{ post.fecha_publicacion.strftime('%d/%m/%Y %H:%M') }}</small>
+            </div>
+            <p class="card-text">Por: <strong>{{ post.nombre_emprendedor }}</strong></p>
+            {% if post.tipo_contenido == 'video' %}
+                <div class="ratio ratio-16x9 mb-2">
+                    <iframe src="{{ post.url_multimedia|replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
+                </div>
+            {% elif post.tipo_contenido == 'imagen' %}
+                <img src="{{ post.url_multimedia }}" class="img-fluid mb-2" alt="Imagen">
+            {% else %}
+                <p class="card-text">{{ post.descripcion }}</p>
+            {% endif %}
+            <div class="d-flex gap-3 mt-2">
+                <span class="like-btn" style="cursor: pointer;" onclick="toggleLike({{ post.id_publicacion }}, this)">
+                    <i class="bi bi-heart{% if post.me_gusta %}-fill text-danger{% endif %}"></i> <span>{{ post.num_likes }}</span>
+                </span>
+                <span><i class="bi bi-chat"></i> {{ post.num_comentarios }}</span>
+                <a href="{{ url_for('content.view_post', id=post.id_publicacion) }}" class="btn btn-sm btn-outline-primary">Ver comentarios</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    <nav>
+        <ul class="pagination">
+            <li class="page-item {% if pagina == 1 %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('content.feed', pagina=pagina-1) if pagina > 1 else '#' }}">Anterior</a>
+            </li>
+            <li class="page-item disabled"><span class="page-link">Página {{ pagina }}</span></li>
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('content.feed', pagina=pagina+1) }}">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+{% else %}
+    <div class="alert alert-info">No hay publicaciones aún. ¡Sé el primero en publicar!</div>
+{% endif %}
 {% endblock %}

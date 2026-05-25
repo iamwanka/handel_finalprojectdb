@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Tabla: {{ tabla }}</h2>
+<a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary mb-3">← Volver al panel</a>
+<div class="table-responsive">
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                {% for col in columnas %}
+                <th>{{ col }}</th>
+                {% endfor %}
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                {% for val in row %}
+                <td>{{ val }}</td>
+                {% endfor %}
+                <td>
+                    <a href="{{ url_for('admin.eliminar_registro', tabla=tabla, id=row[0]) }}" 
+                       class="btn btn-sm btn-danger"
+                       onclick="return confirm('¿Eliminar este registro?')">Eliminar</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ columnas|length + 1 }}">No hay registros</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
