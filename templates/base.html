@@ -622,6 +622,127 @@
             font-size: 1.2rem;
             margin-bottom: 4px;
         }
+
+        /* ═════════════════════════ ESTILOS KIOSKO / PUESTO DE MERCADO ═════════════════════════ */
+
+        /* Techo de feria con franjas azules y blancas */
+        .kiosko-header {
+            position: relative;
+            background: linear-gradient(45deg, #0d6efd 25%, #ffffff 25%, #ffffff 50%, #0d6efd 50%, #0d6efd 75%, #ffffff 75%, #ffffff 100%);
+            background-size: 28px 28px;
+            padding: 1rem 1.5rem;
+            border-radius: 1rem 1rem 0 0;
+            margin-bottom: 1.5rem;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 85%, 95% 100%, 5% 100%, 0% 85%);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .kiosko-header h3 {
+            display: none;
+        }
+
+        .kiosko-badge {
+            background: #e7f1ff;
+            color: #0d6efd;
+            font-weight: 600;
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            border: 1px solid #0d6efd;
+        }
+
+        /* Vitrina principal */
+        .vitrina {
+            border: 2px solid #0d6efd;
+            border-radius: 1rem;
+            background: white;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s;
+            overflow: hidden;
+        }
+
+        .vitrina:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Contenido destacado (video/imagen) */
+        .producto-destacado {
+            border: 1px solid #e7f1ff;
+            border-radius: 0.75rem;
+            background: #f0f7ff;
+            padding: 0.5rem;
+        }
+
+        /* Mini cards de productos (catálogo horizontal) */
+        .catalogo-mini {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            scrollbar-width: thin;
+        }
+
+        .catalogo-mini::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .catalogo-mini .mini-card {
+            flex: 0 0 140px;
+            background: #f0f7ff;
+            border: 1px solid #0d6efd;
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .catalogo-mini .mini-card:hover {
+            transform: scale(1.02);
+            border-color: #0d6efd;
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);
+        }
+
+        .mini-card img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 0.5rem;
+            background: #fff;
+        }
+
+        .mini-card .producto-nombre {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .mini-card .producto-precio {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #0d6efd;
+        }
+
+        /* Botones de acción estilo kiosko */
+        .btn-kiosko {
+            background: #e7f1ff;
+            border: 1px solid #0d6efd;
+            color: #0d6efd;
+            font-weight: 600;
+            border-radius: 2rem;
+            padding: 0.4rem 1rem;
+            transition: all 0.2s;
+        }
+
+        .btn-kiosko:hover {
+            background: #0d6efd;
+            color: #ffffff;
+            transform: scale(1.02);
+        }
     </style>
 </head>
 
