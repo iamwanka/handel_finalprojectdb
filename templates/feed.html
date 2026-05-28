@@ -6,142 +6,154 @@
 </div>
 
 {% if posts %}
-    {% for post in posts %}
-    <div class="card post-card mb-5 overflow-hidden">
-        <div class="card-body p-4 p-md-5">
-            <!-- Header: emprendedor + fecha + badge -->
-            <div class="d-flex justify-content-between align-items-start mb-4">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center"
-                         style="width: 55px; height: 55px;">
-                        <i class="bi bi-person-fill" style="color: #0d6efd; font-size: 1.8rem;"></i>
-                    </div>
-                    <div>
-                        <p class="mb-0 fw-bold fs-5">{{ post.nombre_emprendedor }}</p>
-                        <small class="text-muted">{{ post.fecha_publicacion.strftime('%d de %b, %H:%M') }}</small>
+{% for post in posts %}
+<div class="card post-card mb-5 overflow-hidden" data-post-id="{{ post.id_publicacion }}">
+    <div class="card-body p-4 p-md-5">
+        <!-- Header: emprendedor + fecha + badge -->
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center"
+                    style="width: 60px; height: 60px;">
+                    <i class="bi bi-person-fill" style="color: #0d6efd; font-size: 2rem;"></i>
+                </div>
+                <div>
+                    <h4 class="fw-bold mb-0">{{ post.nombre_emprendedor }}</h4>
+                    {% if post.promedio_calificacion %}
+                    <span class="small text-warning" data-rating-container>
+                        <i class="bi bi-star-fill"></i> {{ "%.1f"|format(post.promedio_calificacion) }}
+                        <span class="text-muted">({{ post.total_resenas }} reseñas)</span>
+                    </span>
+                    {% else %}
+                    <span class="small text-muted" data-rating-container>(sin reseñas)</span>
+                    {% endif %}
+                    <div class="text-muted small mt-1">{{ post.fecha_publicacion.strftime('%d de %b de %Y, %H:%M') }}
                     </div>
                 </div>
-                {% if post.tipo_contenido == 'video' %}
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
-                    <i class="bi bi-camera-reels"></i> Video
-                </span>
-                {% elif post.tipo_contenido == 'imagen' %}
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
-                    <i class="bi bi-image"></i> Imagen
-                </span>
-                {% else %}
-                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
-                    <i class="bi bi-file-text"></i> Texto
-                </span>
-                {% endif %}
             </div>
-
-            <!-- Título -->
-            <h2 class="fw-bold mb-3">{{ post.titulo }}</h2>
-
-            <!-- Contenido multimedia o texto -->
             {% if post.tipo_contenido == 'video' %}
-            <div class="ratio ratio-16x9 mb-4 rounded-4 overflow-hidden shadow-sm">
-                <iframe src="{{ post.url_multimedia|replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
-            </div>
+            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                <i class="bi bi-camera-reels"></i> Video
+            </span>
             {% elif post.tipo_contenido == 'imagen' %}
-            <div class="mb-4 rounded-4 overflow-hidden shadow-sm text-center bg-light">
-                <img src="{{ post.url_multimedia }}" class="img-fluid" style="max-height: 500px; object-fit: contain; width: 100%;" alt="Publicación">
-            </div>
+            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                <i class="bi bi-image"></i> Imagen
+            </span>
             {% else %}
-            <div class="bg-light p-4 rounded-4 mb-4 fs-5">
-                <p class="text-secondary mb-0">{{ post.descripcion }}</p>
-            </div>
+            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                <i class="bi bi-file-text"></i> Texto
+            </span>
             {% endif %}
+        </div>
 
-            <!-- Productos asociados (vitrina horizontal) -->
-            {% if post.productos %}
-            <div class="mb-4 pb-2">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0"><i class="bi bi-box-seam text-primary"></i> Productos disponibles</h5>
-                    <span class="badge bg-light text-secondary rounded-pill">{{ post.productos|length }} productos</span>
-                </div>
-                <div class="row g-4">
-                    {% for prod in post.productos %}
-                    <div class="col-6 col-md-4 col-lg-3">
-                        <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden product-card-hover">
-                            {% if prod.imagen %}
-                            <div style="height: 160px; overflow: hidden;">
-                                <img src="{{ prod.imagen }}" class="card-img-top w-100 h-100" style="object-fit: cover;" alt="{{ prod.nombre }}">
-                            </div>
-                            {% else %}
-                            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 160px;">
-                                <i class="bi bi-image fs-1 text-muted"></i>
-                            </div>
-                            {% endif %}
-                            <div class="card-body p-3 text-center">
-                                <h6 class="fw-bold mb-2">{{ prod.nombre[:30] }}</h6>
-                                <div class="text-primary fw-bold fs-5 mb-3">${{ "{:,.0f}".format(prod.precio) }}</div>
-                                <button class="btn btn-outline-primary rounded-pill w-100 comprar-feed-btn"
-                                        data-producto-id="{{ prod.id }}"
-                                        data-producto-nombre="{{ prod.nombre }}"
-                                        data-precio="{{ prod.precio }}">
-                                    <i class="bi bi-cart-plus"></i> Comprar
-                                </button>
-                            </div>
+        <!-- Título -->
+        <h2 class="fw-bold mb-3">{{ post.titulo }}</h2>
+
+        <!-- Contenido multimedia o texto -->
+        {% if post.tipo_contenido == 'video' %}
+        <div class="ratio ratio-16x9 mb-4 rounded-4 overflow-hidden shadow-sm">
+            <iframe src="{{ post.url_multimedia|replace('watch?v=', 'embed/') }}" allowfullscreen></iframe>
+        </div>
+        {% elif post.tipo_contenido == 'imagen' %}
+        <div class="mb-4 rounded-4 overflow-hidden shadow-sm text-center bg-light">
+            <img src="{{ post.url_multimedia }}" class="img-fluid"
+                style="max-height: 500px; object-fit: contain; width: 100%;" alt="Publicación">
+        </div>
+        {% else %}
+        <div class="bg-light p-4 rounded-4 mb-4 fs-5">
+            <p class="text-secondary mb-0">{{ post.descripcion }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Productos asociados (vitrina horizontal) -->
+        {% if post.productos %}
+        <div class="mb-4 pb-2">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-box-seam text-primary"></i> Productos disponibles</h5>
+                <span class="badge bg-light text-secondary rounded-pill">{{ post.productos|length }} productos</span>
+            </div>
+            <div class="row g-4">
+                {% for prod in post.productos %}
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden product-card-hover">
+                        {% if prod.imagen %}
+                        <div style="height: 160px; overflow: hidden;">
+                            <img src="{{ prod.imagen }}" class="card-img-top w-100 h-100" style="object-fit: cover;"
+                                alt="{{ prod.nombre }}">
+                        </div>
+                        {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 160px;">
+                            <i class="bi bi-image fs-1 text-muted"></i>
+                        </div>
+                        {% endif %}
+                        <div class="card-body p-3 text-center">
+                            <h6 class="fw-bold mb-2">{{ prod.nombre[:30] }}</h6>
+                            <div class="text-primary fw-bold fs-5 mb-3">${{ "{:,.0f}".format(prod.precio) }}</div>
+                            <button class="btn btn-outline-primary rounded-pill w-100 comprar-feed-btn"
+                                data-producto-id="{{ prod.id }}" data-producto-nombre="{{ prod.nombre }}"
+                                data-precio="{{ prod.precio }}">
+                                <i class="bi bi-cart-plus"></i> Comprar
+                            </button>
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
-            </div>
-            {% else %}
-            <div class="alert alert-light text-center rounded-4 mb-4">
-                <i class="bi bi-box"></i> Esta publicación no tiene productos asociados.
-            </div>
-            {% endif %}
-
-            <!-- Acciones grandes -->
-            <div class="d-flex justify-content-around align-items-center pt-3 border-top">
-                <div class="action-link fs-5" onclick="toggleLike({{ post.id_publicacion }}, this)">
-                    <i class="bi {% if post.me_gusta %}bi-heart-fill text-danger{% else %}bi-heart{% endif %} fs-3"></i>
-                    <span class="ms-2 fw-semibold">{{ post.num_likes }}</span>
-                    <span class="text-secondary ms-1">Me gusta</span>
-                </div>
-                <div class="action-link fs-5" onclick="toggleGuardar({{ post.id_publicacion }}, this)">
-                    <i class="bi {% if post.me_guardado %}bi-bookmark-fill{% else %}bi-bookmark{% endif %} fs-3"></i>
-                    <span class="ms-2 fw-semibold">{{ post.num_guardados|default(0) }}</span>
-                    <span class="text-secondary ms-1">Guardar</span>
-                </div>
-                <a href="{{ url_for('content.view_post', id=post.id_publicacion) }}" class="action-link text-decoration-none fs-5">
-                    <i class="bi bi-chat-dots fs-3"></i>
-                    <span class="ms-2 fw-semibold">{{ post.num_comentarios }}</span>
-                    <span class="text-secondary ms-1">Comentarios</span>
-                </a>
+                {% endfor %}
             </div>
         </div>
-    </div>
-    {% endfor %}
+        {% else %}
+        <div class="alert alert-light text-center rounded-4 mb-4">
+            <i class="bi bi-box"></i> Esta publicación no tiene productos asociados.
+        </div>
+        {% endif %}
 
-    <!-- Paginación más estilizada -->
-    <nav class="mt-5">
-        <ul class="pagination justify-content-center gap-2">
-            <li class="page-item {% if pagina == 1 %}disabled{% endif %}">
-                <a class="page-link rounded-pill px-4" href="{{ url_for('content.feed', pagina=pagina-1) if pagina > 1 else '#' }}">
-                    <i class="bi bi-chevron-left"></i> Anterior
-                </a>
-            </li>
-            <li class="page-item disabled">
-                <span class="page-link rounded-pill px-4 bg-light text-dark border-0">{{ pagina }}</span>
-            </li>
-            <li class="page-item">
-                <a class="page-link rounded-pill px-4" href="{{ url_for('content.feed', pagina=pagina+1) }}">
-                    Siguiente <i class="bi bi-chevron-right"></i>
-                </a>
-            </li>
-        </ul>
-    </nav>
-{% else %}
-    <div class="text-center py-5 bg-light rounded-4">
-        <i class="bi bi-inbox" style="font-size: 4rem; opacity: 0.3;"></i>
-        <h4 class="mt-3">No hay publicaciones aún</h4>
-        <p class="text-secondary">Sé el primero en compartir tu emprendimiento</p>
-        <a href="{{ url_for('content.create_post') }}" class="btn btn-primary rounded-pill px-4 mt-2">Crear publicación</a>
+        <!-- Acciones grandes -->
+        <div class="d-flex justify-content-around align-items-center pt-3 border-top">
+            <div class="action-link fs-5" onclick="toggleLike({{ post.id_publicacion }}, this)">
+                <i class="bi {% if post.me_gusta %}bi-heart-fill text-danger{% else %}bi-heart{% endif %} fs-3"></i>
+                <span class="ms-2 fw-semibold">{{ post.num_likes }}</span>
+                <span class="text-secondary ms-1">Me gusta</span>
+            </div>
+            <div class="action-link fs-5" onclick="toggleGuardar({{ post.id_publicacion }}, this)">
+                <i class="bi {% if post.me_guardado %}bi-bookmark-fill{% else %}bi-bookmark{% endif %} fs-3"></i>
+                <span class="ms-2 fw-semibold">{{ post.num_guardados|default(0) }}</span>
+                <span class="text-secondary ms-1">Guardar</span>
+            </div>
+            <a href="{{ url_for('content.view_post', id=post.id_publicacion) }}"
+                class="action-link text-decoration-none fs-5">
+                <i class="bi bi-chat-dots fs-3"></i>
+                <span class="ms-2 fw-semibold">{{ post.num_comentarios }}</span>
+                <span class="text-secondary ms-1">Comentarios</span>
+            </a>
+        </div>
     </div>
+</div>
+{% endfor %}
+
+<!-- Paginación más estilizada -->
+<nav class="mt-5">
+    <ul class="pagination justify-content-center gap-2">
+        <li class="page-item {% if pagina == 1 %}disabled{% endif %}">
+            <a class="page-link rounded-pill px-4"
+                href="{{ url_for('content.feed', pagina=pagina-1) if pagina > 1 else '#' }}">
+                <i class="bi bi-chevron-left"></i> Anterior
+            </a>
+        </li>
+        <li class="page-item disabled">
+            <span class="page-link rounded-pill px-4 bg-light text-dark border-0">{{ pagina }}</span>
+        </li>
+        <li class="page-item">
+            <a class="page-link rounded-pill px-4" href="{{ url_for('content.feed', pagina=pagina+1) }}">
+                Siguiente <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+    </ul>
+</nav>
+{% else %}
+<div class="text-center py-5 bg-light rounded-4">
+    <i class="bi bi-inbox" style="font-size: 4rem; opacity: 0.3;"></i>
+    <h4 class="mt-3">No hay publicaciones aún</h4>
+    <p class="text-secondary">Sé el primero en compartir tu emprendimiento</p>
+    <a href="{{ url_for('content.create_post') }}" class="btn btn-primary rounded-pill px-4 mt-2">Crear publicación</a>
+</div>
 {% endif %}
 
 <!-- Modal de compra (debe existir en base.html, pero lo incluimos por si acaso) -->
@@ -169,8 +181,10 @@
                 </form>
             </div>
             <div class="modal-footer border-0">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                <button type="submit" form="compraForm" class="btn btn-primary rounded-pill px-4">Confirmar compra</button>
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
+                    data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" form="compraForm" class="btn btn-primary rounded-pill px-4">Confirmar
+                    compra</button>
             </div>
         </div>
     </div>
@@ -178,7 +192,7 @@
 
 <script>
     document.querySelectorAll('.comprar-feed-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             const productoId = this.dataset.productoId;
             const productoNombre = this.dataset.productoNombre;
             const precio = this.dataset.precio;
@@ -190,5 +204,50 @@
             new bootstrap.Modal(document.getElementById('compraModal')).show();
         });
     });
+
+    // Función para actualizar ratings de emprendedores
+    async function actualizarRatings() {
+        const posts = document.querySelectorAll('.post-card');
+
+        for (const post of posts) {
+            // Encontrar el atributo data-post-id en la tarjeta
+            const postId = post.getAttribute('data-post-id');
+            if (!postId) continue;
+
+            try {
+                const response = await fetch(`/likes/rating/${postId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    // Actualizar el HTML del rating
+                    const ratingSpan = post.querySelector('[data-rating-container]');
+                    if (ratingSpan) {
+                        if (data.promedio !== null) {
+                            ratingSpan.innerHTML = `
+                                <span class="small text-warning">
+                                    <i class="bi bi-star-fill"></i> ${data.promedio.toFixed(1)}
+                                    <span class="text-muted">(${data.total} reseñas)</span>
+                                </span>
+                            `;
+                        } else {
+                            ratingSpan.innerHTML = '<span class="small text-muted">(sin reseñas)</span>';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error actualizando rating:', error);
+            }
+        }
+    }
+
+    // Actualizar ratings cuando la página recupera el foco (usuario regresa del tab)
+    document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) {
+            actualizarRatings();
+        }
+    });
+
+    // Actualizar ratings cada 30 segundos
+    setInterval(actualizarRatings, 30000);
 </script>
 {% endblock %}

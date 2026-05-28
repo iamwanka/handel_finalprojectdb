@@ -119,7 +119,7 @@ def obtener_comentarios_por_publicacion(id_publicacion):
                 padre['respuestas'].append(com)
     return comentarios_raiz
 
-def obtener_publicacion_por_id(id_publicacion):
+def obtener_publicacion_por_id(id_publicacion, id_usuario=None):
     conn = get_db()
     with conn.cursor() as cur:
         cur.execute("""
@@ -131,23 +131,55 @@ def obtener_publicacion_por_id(id_publicacion):
                 p.url_multimedia,
                 p.fecha_publicacion,
                 u.nombre as nombre_emprendedor,
-                u.id_usuario as emprendedor_id
+                u.id_usuario as emprendedor_id,
+                vr.promedio_calificaciones,
+                vr.total_resenas,
+                COUNT(DISTINCT l.id_usuario) as num_likes,
+                COUNT(DISTINCT g.id_usuario) as num_guardados,
+                COUNT(DISTINCT c.id_comentario) as num_comentarios
             FROM publicacion p
             JOIN usuario u ON p.id_emprendedor = u.id_usuario
+            LEFT JOIN vista_emprendedor_reputacion vr ON u.id_usuario = vr.id_usuario
+            LEFT JOIN likes l ON p.id_publicacion = l.id_publicacion
+            LEFT JOIN guardado g ON p.id_publicacion = g.id_publicacion
+            LEFT JOIN comentario c ON p.id_publicacion = c.id_publicacion
             WHERE p.id_publicacion = %s AND p.activo = TRUE
+            GROUP BY p.id_publicacion, u.nombre, u.id_usuario, vr.promedio_calificaciones, vr.total_resenas
         """, (id_publicacion,))
         row = cur.fetchone()
         if not row:
             return None
+        
+        # Verificar si el usuario actual le dio like o guardó
+        me_gusta = False
+        me_guardado = False
+        if id_usuario:
+            with conn.cursor() as cur2:
+                cur2.execute("SELECT 1 FROM likes WHERE id_usuario = %s AND id_publicacion = %s", 
+                           (id_usuario, id_publicacion))
+                me_gusta = cur2.fetchone() is not None
+                
+                cur2.execute("SELECT 1 FROM guardado WHERE id_usuario = %s AND id_publicacion = %s", 
+                           (id_usuario, id_publicacion))
+                me_guardado = cur2.fetchone() is not None
+        
         return {
             'id': row[0],
+            'id_publicacion': row[0],
             'titulo': row[1],
             'descripcion': row[2],
             'tipo_contenido': row[3],
             'url_multimedia': row[4],
             'fecha_publicacion': row[5],
             'nombre_emprendedor': row[6],
-            'emprendedor_id': row[7]
+            'emprendedor_id': row[7],
+            'promedio_calificacion': float(row[8]) if row[8] else None,
+            'total_resenas': row[9] or 0,
+            'num_likes': row[10],
+            'num_guardados': row[11],
+            'num_comentarios': row[12],
+            'me_gusta': me_gusta,
+            'me_guardado': me_guardado
         }
 
 def obtener_recomendaciones(id_usuario, limite=10):
@@ -300,3 +332,20 @@ def obtener_metricas_emprendedor(id_emprendedor):
         metrics['ultimas_publicaciones'] = [dict(zip(cols, row)) for row in cur.fetchall()]
         
         return metrics
+
+def obtener_resenas_recibidas(id_vendedor, limite=10):
+    """Devuelve las reseñas que ha recibido un vendedor (emprendedor)."""
+    conn = get_db()
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT r.calificacion, r.comentario, r.fecha, 
+                   u.nombre as comprador_nombre, pr.nombre as producto_nombre
+            FROM resena r
+            JOIN usuario u ON r.id_comprador = u.id_usuario
+            JOIN producto pr ON r.id_producto = pr.id_producto
+            WHERE r.id_vendedor = %s
+            ORDER BY r.fecha DESC
+            LIMIT %s
+        """, (id_vendedor, limite))
+        return [{'calificacion': row[0], 'comentario': row[1], 'fecha': row[2],
+                 'comprador': row[3], 'producto': row[4]} for row in cur.fetchall()]

@@ -45,7 +45,7 @@ def feed():
 @content_bp.route('/post/<int:id>', methods=['GET', 'POST'])
 @login_required
 def view_post(id):
-    publicacion = obtener_publicacion_por_id(id)
+    publicacion = obtener_publicacion_por_id(id, current_user.id)
     if not publicacion:
         flash('Publicación no encontrada', 'danger')
         return redirect(url_for('content.feed'))
@@ -291,7 +291,9 @@ def purchases():
 @content_bp.route('/perfil/<int:id>')
 @login_required
 def perfil(id):
-    from services.db_service import obtener_perfil_usuario, obtener_publicaciones_por_usuario
+    from services.db_service import (obtener_perfil_usuario, 
+                                     obtener_publicaciones_por_usuario,
+                                     obtener_resenas_recibidas)
     user = obtener_perfil_usuario(id)
     if not user:
         flash('Usuario no encontrado', 'danger')
@@ -299,9 +301,15 @@ def perfil(id):
     
     pagina = request.args.get('pagina', 1, type=int)
     posts = obtener_publicaciones_por_usuario(id, pagina)
+    reseñas = obtener_resenas_recibidas(id, 10)   # últimas 10 reseñas
     
     es_propio = (current_user.id == id)
-    return render_template('perfil.html', user=user, posts=posts, pagina=pagina, es_propio=es_propio)
+    return render_template('perfil.html', 
+                         user=user, 
+                         posts=posts, 
+                         pagina=pagina, 
+                         es_propio=es_propio,
+                         reseñas=reseñas)
 
 @content_bp.route('/editar-perfil', methods=['GET', 'POST'])
 @login_required

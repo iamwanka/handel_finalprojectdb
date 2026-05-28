@@ -56,6 +56,28 @@
                 {% endif %}
             </div>
         </div>
+        <!-- Mostrar reseñas recibidas -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h4>Reseñas recibidas</h4>
+                {% if reseñas %}
+                    {% for res in reseñas %}
+                    <div class="border-bottom mb-3 pb-3">
+                        <div class="d-flex justify-content-between">
+                            <div class="text-warning fw-bold">
+                                {% for i in range(res.calificacion) %}★{% endfor %}{% for i in range(5 - res.calificacion) %}☆{% endfor %}
+                            </div>
+                            <small>{{ res.fecha.strftime('%d/%m/%Y') }}</small>
+                        </div>
+                        <p class="mt-2 mb-1"><em>{{ res.comentario or "Sin comentario" }}</em></p>
+                        <small class="text-muted">Producto: {{ res.producto }} — Comprador: {{ res.comprador }}</small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">Aún no has recibido reseñas.</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

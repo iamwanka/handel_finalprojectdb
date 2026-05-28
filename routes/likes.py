@@ -51,3 +51,27 @@ def toggle_guardar():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@likes_bp.route('/rating/<int:id_publicacion>', methods=['GET'])
+def get_post_rating(id_publicacion):
+    """Obtiene el rating actualizado de un emprendedor basado en su publicación"""
+    from services.db_service import get_db
+    conn = get_db()
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT 
+                vr.promedio_calificaciones,
+                vr.total_resenas
+            FROM publicacion p
+            JOIN usuario u ON p.id_emprendedor = u.id_usuario
+            LEFT JOIN vista_emprendedor_reputacion vr ON u.id_usuario = vr.id_usuario
+            WHERE p.id_publicacion = %s
+        """, (id_publicacion,))
+        row = cur.fetchone()
+        if row:
+            return jsonify({
+                'success': True,
+                'promedio': float(row[0]) if row[0] else None,
+                'total': row[1] or 0
+            })
+        return jsonify({'success': False, 'error': 'Publicación no encontrada'}), 404
